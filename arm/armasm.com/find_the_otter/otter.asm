@@ -21,3 +21,32 @@ _start:
     @@@@@@@@@@@@@@@@ End Register Preload 
 
     @ Write your program here!!! 
+    ldr r10, =outstr
+    strb r1, [r10] @ 'O'
+
+    add r10, #1
+    strb r5, [r10] @ 'T'
+
+    add r10, #1
+    strb r5, [r10] @ 'T'
+
+    add r10, #1
+    strb r7, [r10] @ 'E'
+    
+    add r10, #1
+    strb r6, [r10] @ 'R'
+
+    @ Write string to output
+    mov r7, #4
+    mov r0, #1
+    ldr r1, =outstr
+    mov r2, #11
+    svc 0
+
+    @ Exit
+    mov r7, #1
+    mov r0, #0
+    svc 0
+
+.data 
+  outstr: .ascii "##########\n"
