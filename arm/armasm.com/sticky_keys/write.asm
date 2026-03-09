@@ -33,3 +33,18 @@
 .endm 
 
 @@ Your macros here
+.macro print_char_at addr 
+  mov r7, #4
+  mov r0, #1
+  ldrb r1, \addr 
+  mov r2, #1
+  svc 0
+.endm
+
+.macro print_char_pointed_by_r9 
+  mov r7, #4
+  mov r0, #1
+  mov r1, r9
+  mov r2, #1
+  svc 0
+.endm
