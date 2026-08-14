@@ -1,46 +1,109 @@
 {
     "version": "0.2.0",
     "configurations": [
-        
+        // ---------------------------------------------------------------
+        // Debugging uses ms-vscode.cpptools (cppdbg).
+        // Gives the Registers scope in the Variables panel (CPU/Segs/FPU/
+        // SSE/AVX groups) AND the native VS Code memory view.
+        //
+        // NOTE: stopAtEntry is false on purpose. cppdbg implements it by
+        // breaking on `main`, which does not exist in these _start-based
+        // programs -- with it on, the program just runs to completion.
+        // Set a breakpoint in the gutter instead (requires
+        // "debug.allowBreakpointsEverywhere": true).
+        // ---------------------------------------------------------------
         {
-            "type": "gdb",
+            "type": "cppdbg",
             "request": "launch",
-            "name": "GDB32",
-            "program": "${fileDirname}/${fileBasenameNoExtension}",
-            "stopOnEntry": false,
-            "preLaunchTask": "asm32"
+            "name": "CPPDBG64 (nasm elf64 + ld)",
+            "program": "${fileDirname}/${fileBasenameNoExtension}.exe",
+            "args": [],
+            "cwd": "${fileDirname}",
+            "stopAtEntry": false,
+            "preLaunchTask": "asm64",
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "setupCommands": [
+                {
+                    "description": "Intel syntax, to match the nasm source",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Auto-dump the top of the stack into the Debug Console on every stop",
+                    "text": "display/8gx $rsp",
+                    "ignoreFailures": true
+                }
+            ]
         },
         {
-            "type": "gdb",
+            "type": "cppdbg",
             "request": "launch",
-            "name": "GDB64",
-            "program": "${fileDirname}/${fileBasenameNoExtension}",
-            "stopOnEntry": false,
-            "preLaunchTask": "asm64"
+            "name": "CPPDBG32 (nasm elf32 + ld)",
+            "program": "${fileDirname}/${fileBasenameNoExtension}.exe",
+            "args": [],
+            "cwd": "${fileDirname}",
+            "stopAtEntry": false,
+            "preLaunchTask": "asm32",
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "targetArchitecture": "x86",
+            "setupCommands": [
+                {
+                    "description": "Intel syntax, to match the nasm source",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Auto-dump the top of the stack into the Debug Console on every stop",
+                    "text": "display/8wx $esp",
+                    "ignoreFailures": true
+                }
+            ]
         },
         {
-            "type": "gdb",
+            "type": "cppdbg",
             "request": "launch",
-            "name": "GAS",
-            "program": "${fileDirname}/${fileBasenameNoExtension}",
-            "stopOnEntry": false,
-            "preLaunchTask": "gas"
+            "name": "CPPDBG64+GCC (nasm elf64 + gcc)",
+            "program": "${fileDirname}/${fileBasenameNoExtension}.exe",
+            "args": [],
+            "cwd": "${fileDirname}",
+            "stopAtEntry": false,
+            "preLaunchTask": "asm64+gcc",
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "setupCommands": [
+                {
+                    "description": "Intel syntax, to match the nasm source",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Auto-dump the top of the stack into the Debug Console on every stop",
+                    "text": "display/8gx $rsp",
+                    "ignoreFailures": true
+                }
+            ]
         },
         {
-            "type": "gdb",
+            "type": "cppdbg",
             "request": "launch",
-            "name": "GDB32+GCC",
-            "program": "${fileDirname}/${fileBasenameNoExtension}",
-            "stopOnEntry": false,
-            "preLaunchTask": "asm32+gcc"
-        },
-        {
-            "type": "gdb",
-            "request": "launch",
-            "name": "GDB64+GCC",
-            "program": "${fileDirname}/${fileBasenameNoExtension}",
-            "stopOnEntry": false,
-            "preLaunchTask": "asm64+gcc"
+            "name": "CPPDBG GAS (as --32 + ld)",
+            "program": "${fileDirname}/${fileBasenameNoExtension}.exe",
+            "args": [],
+            "cwd": "${fileDirname}",
+            "stopAtEntry": false,
+            "preLaunchTask": "gas",
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "targetArchitecture": "x86",
+            "setupCommands": [
+                {
+                    "description": "Auto-dump the top of the stack into the Debug Console on every stop",
+                    "text": "display/8wx $esp",
+                    "ignoreFailures": true
+                }
+            ]
         }
     ]
 }
