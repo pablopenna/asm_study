@@ -4,7 +4,7 @@
         {
           "label": "asm32",
           "type": "shell",
-          "command": "rawfilename=${fileDirname}/${fileBasenameNoExtension}; nasm -F dwarf -g -f elf32 -i ${fileDirname} -o $rawfilename.o ${file}; ld -m elf_i386 -o $rawfilename.exe $rawfilename.o;",
+          "command": "cd \"${fileDirname}\"; ext=\"${file##*.}\"; outname=\"${fileBasenameNoExtension}\"; for f in *.\"$ext\"; do [ -f \"$f\" ] && nasm -F dwarf -g -f elf32 -i . -o \"${f%.*}.o\" \"$f\"; done; ld -m elf_i386 -o \"$outname.exe\" *.o",
           "problemMatcher": {
               "pattern": {
                 "regexp": "error"
@@ -20,7 +20,7 @@
         {
           "label": "asm64",
           "type": "shell",
-          "command": "rawfilename=${fileDirname}/${fileBasenameNoExtension}; nasm -F dwarf -g -f elf64 -i ${fileDirname} -o $rawfilename.o ${file}; ld -m elf_x86_64 -o $rawfilename.exe $rawfilename.o;",
+          "command": "cd \"${fileDirname}\"; ext=\"${file##*.}\"; outname=\"${fileBasenameNoExtension}\"; for f in *.\"$ext\"; do [ -f \"$f\" ] && nasm -F dwarf -g -f elf64 -i . -o \"${f%.*}.o\" \"$f\"; done; ld -m elf_x86_64 -o \"$outname.exe\" *.o",
           "problemMatcher": {
               "pattern": {
                 "regexp": "error"
@@ -36,7 +36,7 @@
         {
           "label": "gas",
           "type": "shell",
-          "command": "rawfilename=${fileDirname}/${fileBasenameNoExtension}; as --32 --gstabs+ ${file} -o $rawfilename.o; ld -m elf_i386 $rawfilename.o -o $rawfilename.exe",
+          "command": "cd \"${fileDirname}\"; ext=\"${file##*.}\"; outname=\"${fileBasenameNoExtension}\"; for f in *.\"$ext\"; do [ -f \"$f\" ] && as --32 --gstabs+ \"$f\" -o \"${f%.*}.o\"; done; ld -m elf_i386 -o \"$outname.exe\" *.o",
           "problemMatcher": {
               "pattern": {
                 "regexp": "error"
@@ -52,7 +52,7 @@
         {
           "label": "asm64+gcc",
           "type": "shell",
-          "command": "rawfilename=${fileDirname}/${fileBasenameNoExtension}; nasm -F dwarf -g -f elf64 -i ${fileDirname} -o $rawfilename.o ${file}; gcc -m64 -o $rawfilename.exe $rawfilename.o;",
+          "command": "cd \"${fileDirname}\"; ext=\"${file##*.}\"; outname=\"${fileBasenameNoExtension}\"; for f in *.\"$ext\"; do [ -f \"$f\" ] && nasm -F dwarf -g -f elf64 -i . -o \"${f%.*}.o\" \"$f\"; done; gcc -m64 -o \"$outname.exe\" *.o",
           "problemMatcher": {
               "pattern": {
                 "regexp": "error"
@@ -68,7 +68,7 @@
         {
           "label": "asm32+gcc",
           "type": "shell",
-          "command": "rawfilename=${fileDirname}/${fileBasenameNoExtension}; nasm -F dwarf -g -f elf32 -i ${fileDirname} -o $rawfilename.o ${file}; gcc -m32 -o $rawfilename.exe $rawfilename.o;",
+          "command": "cd \"${fileDirname}\"; ext=\"${file##*.}\"; outname=\"${fileBasenameNoExtension}\"; for f in *.\"$ext\"; do [ -f \"$f\" ] && nasm -F dwarf -g -f elf32 -i . -o \"${f%.*}.o\" \"$f\"; done; gcc -m32 -o \"$outname.exe\" *.o",
           "problemMatcher": {
               "pattern": {
                 "regexp": "error"
