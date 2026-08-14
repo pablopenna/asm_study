@@ -2,12 +2,13 @@ section .text
 global _start
 extern exit
 extern string_length
+extern print_string
 
 _start:
   mov rdi, codes
-  call string_length
+  call print_string
 
-  mov rdi, rax
+  mov rdi, 0
   call exit
 
 section .data

@@ -27,3 +27,19 @@ string_length:
 
     .end:
     ret
+
+global print_string
+; in - rdi contains pointer to string
+print_string:
+    mov r8, rdi ; string in r8
+    
+    call string_length
+    mov r9, rax ; string length in r9
+
+    mov rax, 1
+    mov rdi, 1
+    mov rsi, r8
+    mov rdx, r9
+    syscall
+
+    ret
