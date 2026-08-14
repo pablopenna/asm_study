@@ -52,3 +52,15 @@ print_char:
     mov rdx, 1
     syscall
     ret
+
+global print_newline
+print_newline:
+    push 0x0A; 0x0A or 10 is the new line character in ascii
+    
+    mov rdi, rsp
+
+    call print_char
+    
+    pop rax
+
+    ret
