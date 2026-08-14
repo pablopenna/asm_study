@@ -43,3 +43,12 @@ print_string:
     syscall
 
     ret
+
+global print_char
+print_char:
+    mov rsi, rdi; move parameter to register used as pointer to string
+    mov rax, 1
+    mov rdi, 1
+    mov rdx, 1
+    syscall
+    ret

@@ -3,10 +3,11 @@ global _start
 extern exit
 extern string_length
 extern print_string
+extern print_char
 
 _start:
   mov rdi, codes
-  call print_string
+  call print_char
 
   mov rdi, 0
   call exit
