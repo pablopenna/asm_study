@@ -1,5 +1,17 @@
 # ASM Study
 
+Two editor setups are checked in and they are independent — use either.
+
+| | VS Code | Zed |
+|---|---|---|
+| config | `.vscode/` | `.zed/` |
+| build | `tasks.json` | `tasks.json` |
+| debug | `launch.json` (`cppdbg`) | `debug.json` (gdb's own DAP server) |
+| extension needed | `ms-vscode.cpptools` | none for debugging |
+
+- [Setup VS Code](#setup-vscode)
+- [Setup Zed](#setup-zed)
+
 ## Setup VSCode
 
 > Taken from https://github.com/newtonsart/vscode-assembly
@@ -78,3 +90,108 @@ Just follow the next steps: VS->Settings->Debug and change "debug.allowBreakpoin
 ### Optional
 - [ASM Code Lens](https://marketplace.visualstudio.com/items?itemName=maziac.asm-code-lens) for syntax highlighting, completions and more.
 - [x86 Instruction Reference](https://marketplace.visualstudio.com/items?itemName=whiteout2.x86) for useful information about x86 instructions
+
+---
+
+## Setup Zed
+
+The `.zed/` folder is checked in and needs no extension for debugging — Zed talks
+to **gdb's own built-in DAP server**, so the whole `ms-vscode.cpptools` story above
+does not apply.
+
+### Toolchain
+
+Same as the VS Code setup, plus a version floor:
+
+```
+sudo pacman -S gdb gcc binutils nasm     # or apt / yum
+```
+
+**gdb must be ≥ 14.1** — that is when gdb gained the `dap` interpreter Zed drives.
+Check with `gdb --version`; on 13.x the debug configs will fail to start.
+
+If gdb is not on `PATH`, point Zed at it in `.zed/settings.json`:
+
+```json
+"dap": { "GDB": { "binary": "/usr/bin/gdb" } }
+```
+
+### ⚠️ You need a unix shell in the worktree
+
+This is the one real blocker, and it is not a config problem. The build tasks run
+`nasm`/`ld`/`as`/`gcc` through a POSIX shell, and the debug configs need a Linux
+gdb. Zed has **no Remote-WSL equivalent** to VS Code's — its remoting is
+SSH-based. So on Windows, either:
+
+- **run Zed inside WSL over SSH** (`ssh` server in the distro, then Zed →
+  *Open Remote Project*), or
+- run Zed natively on Linux.
+
+Opening `D:\...\asm_study` in a native Windows Zed will give you working editing
+and syntax highlighting, but every task and debug config will fail — Zed's
+`"shell": "system"` is PowerShell there, and there is no `nasm`/`ld`/`gdb` to call.
+
+### gdb settings (`setupCommands` replacement)
+
+Zed's GDB adapter has no `setupCommands`. The equivalent gdb settings — intel
+disassembly flavour, auto-dumping the top of the stack on every stop — live in
+[`.gdbinit`](.gdbinit) at the repo root.
+
+gdb will **not** pick it up on its own: local `.gdbinit` auto-load only applies to
+the current directory, and these sessions run with cwd set to the source
+subdirectory (`x86/print_hex_v2`, …), not the repo root. Source it once from your
+global gdbinit:
+
+```sh
+mkdir -p ~/.config/gdb
+echo "source /path/to/asm_study/.gdbinit" >> ~/.config/gdb/gdbinit
+```
+
+### Build
+
+`.zed/tasks.json` mirrors the VS Code tasks one-for-one — `asm32`, `asm64`,
+`gas`, `asm64+gcc`, `asm32+gcc` — with the same behaviour: assemble *every* file
+sharing the active file's extension in the active file's directory, then link
+them into `<activefile>.exe`. Plus a `run (active file's .exe)` task.
+
+`cmd-shift-p` → **task: spawn**, or bind a key to rerun the last one.
+
+`${file##*.}`/`${fileBasenameNoExtension}` became `${ZED_FILENAME##*.}`/`$ZED_STEM`,
+and `cd "${fileDirname}"` became the task's `"cwd": "$ZED_DIRNAME"`.
+
+### Debug
+
+`.zed/debug.json` provides four configs, each wired to the matching build task via
+`"build"` (Zed's `preLaunchTask`):
+
+| config | builds with |
+|---|---|
+| `GDB64 (nasm elf64 + ld)` | `asm64` |
+| `GDB32 (nasm elf32 + ld)` | `asm32` |
+| `GDB64 (nasm elf64 + gcc)` | `asm64+gcc` |
+| `GDB32 (nasm elf32 + gcc)` | `asm32+gcc` |
+
+Open the `.asm` file you want to run, then `cmd-shift-p` → **debug: start** and
+pick a config — `$ZED_DIRNAME`/`$ZED_STEM` resolve against the active editor, so
+the same four configs cover every subdirectory.
+
+#### `stopOnEntry` works here
+Unlike `cppdbg` — which implemented `stopAtEntry` by breaking on `main` and so
+ran these `_start`-based programs straight to completion — gdb's DAP stops at the
+real entry point. The configs set `"stopOnEntry": true`, so you land on `_start`.
+Gutter breakpoints work regardless; Zed has no "allow breakpoints everywhere"
+gate to flip.
+
+#### What you get vs cppdbg
+- **Registers** — Zed's variable list shows a Registers scope from gdb.
+- **Disassembly / memory** — driven by gdb's DAP; feature coverage here is
+  thinner than `cppdbg` + `OpenDebugAD7`. When something is missing, the debug
+  console is a real gdb console: `x/8gx $rsp`, `info registers`, `layout asm`
+  equivalents all work by typing the command.
+
+### Syntax highlighting
+
+Zed has no built-in NASM grammar. Install the **Assembly** extension
+(`cmd-shift-p` → *zed: extensions* → search "assembly"). `.zed/settings.json`
+already maps `.asm`/`.inc`/`.s`/`.S` to the `Assembly` language and disables
+format-on-save so the hand-aligned columns in these sources survive.

@@ -1,0 +1,60 @@
+// Zed equivalent of .vscode/launch.json
+//
+// Zed drives gdb's own built-in DAP server (gdb >= 14.1) instead of the
+// ms-vscode.cpptools `cppdbg` adapter. Practical differences vs VS Code:
+//
+//   * No `MIMode` / `miDebuggerPath` -- Zed finds `gdb` on PATH. Override with
+//     the top-level "gdb" setting in .zed/settings.json if it lives elsewhere.
+//   * No `setupCommands`. gdb settings (intel disassembly flavour, the
+//     auto-display of the stack on every stop) live in .gdbinit at the repo
+//     root instead, sourced once from your global gdbinit -- see README.
+//   * No `targetArchitecture` -- the elf32 binary carries its own arch and gdb
+//     picks it up from the file.
+//   * `stopOnEntry` works here. cppdbg implemented it by breaking on `main`,
+//     which none of these _start-based programs have; gdb's DAP stops at the
+//     real entry point, so you land on `_start` instead of running to
+//     completion. Gutter breakpoints work either way.
+//
+// `build` references a task label from .zed/tasks.json.
+[
+  {
+    "label": "GDB64 (nasm elf64 + ld)",
+    "adapter": "GDB",
+    "request": "launch",
+    "program": "$ZED_DIRNAME/$ZED_STEM.exe",
+    "args": [],
+    "cwd": "$ZED_DIRNAME",
+    "stopOnEntry": true,
+    "build": "asm64"
+  },
+  {
+    "label": "GDB32 (nasm elf32 + ld)",
+    "adapter": "GDB",
+    "request": "launch",
+    "program": "$ZED_DIRNAME/$ZED_STEM.exe",
+    "args": [],
+    "cwd": "$ZED_DIRNAME",
+    "stopOnEntry": true,
+    "build": "asm32"
+  },
+  {
+    "label": "GDB64 (nasm elf64 + gcc)",
+    "adapter": "GDB",
+    "request": "launch",
+    "program": "$ZED_DIRNAME/$ZED_STEM.exe",
+    "args": [],
+    "cwd": "$ZED_DIRNAME",
+    "stopOnEntry": true,
+    "build": "asm64+gcc"
+  },
+  {
+    "label": "GDB32 (nasm elf32 + gcc)",
+    "adapter": "GDB",
+    "request": "launch",
+    "program": "$ZED_DIRNAME/$ZED_STEM.exe",
+    "args": [],
+    "cwd": "$ZED_DIRNAME",
+    "stopOnEntry": true,
+    "build": "asm32+gcc"
+  }
+]

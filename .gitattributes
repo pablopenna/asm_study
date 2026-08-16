@@ -1,0 +1,9 @@
+# This repo is built and debugged from a unix toolchain (nasm/ld/gdb), even when
+# the worktree lives on a Windows drive and is reached through WSL. core.autocrlf
+# would otherwise hand gdb a CRLF .gdbinit and the shell CRLF scripts.
+* text=auto eol=lf
+*.asm text eol=lf
+*.inc text eol=lf
+*.s   text eol=lf
+*.sh  text eol=lf
+.gdbinit text eol=lf

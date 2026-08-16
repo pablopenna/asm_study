@@ -1,0 +1,61 @@
+// Zed equivalent of .vscode/tasks.json
+//
+// Same behaviour: assemble *every* file sharing the active file's extension in
+// the active file's directory, then link them all into <activefile>.exe.
+//
+// The command bodies are POSIX shell, so the worktree must be opened with a
+// unix shell (native Linux, or a Zed SSH remote into WSL) -- see README.
+[
+  {
+    "label": "asm32",
+    "command": "ext=\"${ZED_FILENAME##*.}\"; outname=\"$ZED_STEM\"; for f in *.\"$ext\"; do [ -f \"$f\" ] && nasm -F dwarf -g -f elf32 -i . -o \"${f%.*}.o\" \"$f\"; done; ld -m elf_i386 -o \"$outname.exe\" *.o",
+    "cwd": "$ZED_DIRNAME",
+    "reveal": "no_focus",
+    "hide": "on_success",
+    "save": "all",
+    "allow_concurrent_runs": false
+  },
+  {
+    "label": "asm64",
+    "command": "ext=\"${ZED_FILENAME##*.}\"; outname=\"$ZED_STEM\"; for f in *.\"$ext\"; do [ -f \"$f\" ] && nasm -F dwarf -g -f elf64 -i . -o \"${f%.*}.o\" \"$f\"; done; ld -m elf_x86_64 -o \"$outname.exe\" *.o",
+    "cwd": "$ZED_DIRNAME",
+    "reveal": "no_focus",
+    "hide": "on_success",
+    "save": "all",
+    "allow_concurrent_runs": false
+  },
+  {
+    "label": "gas",
+    "command": "ext=\"${ZED_FILENAME##*.}\"; outname=\"$ZED_STEM\"; for f in *.\"$ext\"; do [ -f \"$f\" ] && as --32 --gstabs+ \"$f\" -o \"${f%.*}.o\"; done; ld -m elf_i386 -o \"$outname.exe\" *.o",
+    "cwd": "$ZED_DIRNAME",
+    "reveal": "no_focus",
+    "hide": "on_success",
+    "save": "all",
+    "allow_concurrent_runs": false
+  },
+  {
+    "label": "asm64+gcc",
+    "command": "ext=\"${ZED_FILENAME##*.}\"; outname=\"$ZED_STEM\"; for f in *.\"$ext\"; do [ -f \"$f\" ] && nasm -F dwarf -g -f elf64 -i . -o \"${f%.*}.o\" \"$f\"; done; gcc -m64 -o \"$outname.exe\" *.o",
+    "cwd": "$ZED_DIRNAME",
+    "reveal": "no_focus",
+    "hide": "on_success",
+    "save": "all",
+    "allow_concurrent_runs": false
+  },
+  {
+    "label": "asm32+gcc",
+    "command": "ext=\"${ZED_FILENAME##*.}\"; outname=\"$ZED_STEM\"; for f in *.\"$ext\"; do [ -f \"$f\" ] && nasm -F dwarf -g -f elf32 -i . -o \"${f%.*}.o\" \"$f\"; done; gcc -m32 -o \"$outname.exe\" *.o",
+    "cwd": "$ZED_DIRNAME",
+    "reveal": "no_focus",
+    "hide": "on_success",
+    "save": "all",
+    "allow_concurrent_runs": false
+  },
+  {
+    "label": "run (active file's .exe)",
+    "command": "\"./$ZED_STEM.exe\"; echo \"[exit $?]\"",
+    "cwd": "$ZED_DIRNAME",
+    "reveal": "always",
+    "allow_concurrent_runs": false
+  }
+]
