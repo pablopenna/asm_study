@@ -97,3 +97,35 @@ print_uint:
     call print_string
     add rsp, 32; similar to pop but discarding value
     ret
+
+global print_int
+; div <reg> where <reg> holds the divisor. The number being divided is 128 bits: RDX:RAX.
+; After the instruction finishes RAX holds the quotient and RDX the remainder.
+print_int:
+    mov r8, rdi
+    cmp r8, 0
+    jl .negative
+
+    .positive
+    .print_plus:
+    push byte 0x0
+    mov byte[rsp], 0x2B
+    mov rdi, rsp
+    call print_char
+    add rsp, 8
+    jmp .finally
+
+    .negative:
+    .print_minus:
+    push byte 0x0
+    mov byte[rsp], 0x2D
+    mov rdi, rsp
+    call print_char
+    add rsp, 8
+    .convert_to_positive:
+    neg r8 
+
+    .finally:
+    mov rdi, r8
+    call print_uint
+    ret
