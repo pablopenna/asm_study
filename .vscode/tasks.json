@@ -1,85 +1,186 @@
 {
     "version": "2.0.0",
+    // -------------------------------------------------------------------
+    // Every build task follows the same rules:
+    //
+    //   * `set -e`      -> the first nasm/as error aborts the task, so the
+    //                      task exits non-zero and VS Code refuses to start
+    //                      the debugger. Without it the loop kept going and
+    //                      `ld` linked whatever .o files were left over from
+    //                      an older build: the exe launched fine but its
+    //                      debug info did not match the source, so
+    //                      breakpoints never bound. That is the "sometimes
+    //                      it does not stop until I make clean" bug.
+    //   * `rm -f *.o`   -> always a clean build. These programs are tiny and
+    //                      assembling is instant, so there is no reason to
+    //                      risk linking a stale object (including 32-bit
+    //                      objects left behind by the asm32 task, or the
+    //                      object of a .s file that was since renamed).
+    //   * `debug.exe`   -> fixed output name, matching launch.json. The old
+    //                      ${fileBasenameNoExtension}.exe meant pressing F5
+    //                      while lib.s was focused built and debugged
+    //                      lib.exe -- a binary with no _start at all.
+    //   * real problemMatcher -> nasm errors now land in the Problems panel
+    //                      and pop the terminal open. The previous matcher
+    //                      (`regexp: "error"`, no capture groups) matched
+    //                      nothing, so failures were invisible.
+    //
+    // The Makefiles are left alone: `make` still builds main.exe for running
+    // by hand.
+    // -------------------------------------------------------------------
     "tasks": [
         {
-          "label": "asm32",
-          "type": "shell",
-          "command": "cd \"${fileDirname}\"; ext=\"${file##*.}\"; outname=\"${fileBasenameNoExtension}\"; for f in *.\"$ext\"; do [ -f \"$f\" ] && nasm -F dwarf -g -f elf32 -i . -o \"${f%.*}.o\" \"$f\"; done; ld -m elf_i386 -o \"$outname.exe\" *.o",
-          "problemMatcher": {
-              "pattern": {
-                "regexp": "error"
-              }
+            "label": "asm64",
+            "type": "shell",
+            "command": "set -e; cd \"${fileDirname}\"; rm -f ./*.o ./debug.exe; for f in ./*.s; do nasm -F dwarf -g -f elf64 -i . -o \"${f%.s}.o\" \"$f\"; done; ld -m elf_x86_64 -o debug.exe ./*.o",
+            "options": {
+                "shell": {
+                    "executable": "/bin/bash",
+                    "args": ["-c"]
+                }
             },
-          "presentation": {
-              "focus": true,
-              "panel": "dedicated",
-              "reveal": "silent",
-              "clear": true
-          }
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": {
+                "owner": "nasm",
+                "fileLocation": ["relative", "${fileDirname}"],
+                "pattern": {
+                    "regexp": "^(.*):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "severity": 3,
+                    "message": 4
+                }
+            },
+            "presentation": {
+                "echo": false,
+                "focus": false,
+                "panel": "dedicated",
+                "reveal": "silent",
+                "clear": true
+            }
         },
         {
-          "label": "asm64",
-          "type": "shell",
-          "command": "cd \"${fileDirname}\"; ext=\"${file##*.}\"; outname=\"${fileBasenameNoExtension}\"; for f in *.\"$ext\"; do [ -f \"$f\" ] && nasm -F dwarf -g -f elf64 -i . -o \"${f%.*}.o\" \"$f\"; done; ld -m elf_x86_64 -o \"$outname.exe\" *.o",
-          "problemMatcher": {
-              "pattern": {
-                "regexp": "error"
-              }
+            "label": "asm32",
+            "type": "shell",
+            "command": "set -e; cd \"${fileDirname}\"; rm -f ./*.o ./debug.exe; for f in ./*.s; do nasm -F dwarf -g -f elf32 -i . -o \"${f%.s}.o\" \"$f\"; done; ld -m elf_i386 -o debug.exe ./*.o",
+            "options": {
+                "shell": {
+                    "executable": "/bin/bash",
+                    "args": ["-c"]
+                }
             },
-          "presentation": {
-              "focus": true,
-              "panel": "dedicated",
-              "reveal": "silent",
-              "clear": true
-          }
+            "group": "build",
+            "problemMatcher": {
+                "owner": "nasm",
+                "fileLocation": ["relative", "${fileDirname}"],
+                "pattern": {
+                    "regexp": "^(.*):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "severity": 3,
+                    "message": 4
+                }
+            },
+            "presentation": {
+                "echo": false,
+                "focus": false,
+                "panel": "dedicated",
+                "reveal": "silent",
+                "clear": true
+            }
         },
         {
-          "label": "gas",
-          "type": "shell",
-          "command": "cd \"${fileDirname}\"; ext=\"${file##*.}\"; outname=\"${fileBasenameNoExtension}\"; for f in *.\"$ext\"; do [ -f \"$f\" ] && as --32 --gstabs+ \"$f\" -o \"${f%.*}.o\"; done; ld -m elf_i386 -o \"$outname.exe\" *.o",
-          "problemMatcher": {
-              "pattern": {
-                "regexp": "error"
-              }
+            "label": "gas",
+            "type": "shell",
+            "command": "set -e; cd \"${fileDirname}\"; rm -f ./*.o ./debug.exe; for f in ./*.s; do as --32 --gstabs+ \"$f\" -o \"${f%.s}.o\"; done; ld -m elf_i386 -o debug.exe ./*.o",
+            "options": {
+                "shell": {
+                    "executable": "/bin/bash",
+                    "args": ["-c"]
+                }
             },
-          "presentation": {
-              "focus": true,
-              "panel": "dedicated",
-              "reveal": "silent",
-              "clear": true
-          }
+            "group": "build",
+            "problemMatcher": {
+                "owner": "gas",
+                "fileLocation": ["relative", "${fileDirname}"],
+                "pattern": {
+                    "regexp": "^(.*):(\\d+):\\s+(Warning|Error):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "severity": 3,
+                    "message": 4
+                }
+            },
+            "presentation": {
+                "echo": false,
+                "focus": false,
+                "panel": "dedicated",
+                "reveal": "silent",
+                "clear": true
+            }
         },
         {
-          "label": "asm64+gcc",
-          "type": "shell",
-          "command": "cd \"${fileDirname}\"; ext=\"${file##*.}\"; outname=\"${fileBasenameNoExtension}\"; for f in *.\"$ext\"; do [ -f \"$f\" ] && nasm -F dwarf -g -f elf64 -i . -o \"${f%.*}.o\" \"$f\"; done; gcc -m64 -o \"$outname.exe\" *.o",
-          "problemMatcher": {
-              "pattern": {
-                "regexp": "error"
-              }
+            "label": "asm64+gcc",
+            "type": "shell",
+            "command": "set -e; cd \"${fileDirname}\"; rm -f ./*.o ./debug.exe; for f in ./*.s; do nasm -F dwarf -g -f elf64 -i . -o \"${f%.s}.o\" \"$f\"; done; gcc -m64 -no-pie -o debug.exe ./*.o",
+            "options": {
+                "shell": {
+                    "executable": "/bin/bash",
+                    "args": ["-c"]
+                }
             },
-          "presentation": {
-              "focus": true,
-              "panel": "dedicated",
-              "reveal": "silent",
-              "clear": true
-          }
+            "group": "build",
+            "problemMatcher": {
+                "owner": "nasm",
+                "fileLocation": ["relative", "${fileDirname}"],
+                "pattern": {
+                    "regexp": "^(.*):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "severity": 3,
+                    "message": 4
+                }
+            },
+            "presentation": {
+                "echo": false,
+                "focus": false,
+                "panel": "dedicated",
+                "reveal": "silent",
+                "clear": true
+            }
         },
         {
-          "label": "asm32+gcc",
-          "type": "shell",
-          "command": "cd \"${fileDirname}\"; ext=\"${file##*.}\"; outname=\"${fileBasenameNoExtension}\"; for f in *.\"$ext\"; do [ -f \"$f\" ] && nasm -F dwarf -g -f elf32 -i . -o \"${f%.*}.o\" \"$f\"; done; gcc -m32 -o \"$outname.exe\" *.o",
-          "problemMatcher": {
-              "pattern": {
-                "regexp": "error"
-              }
+            "label": "asm32+gcc",
+            "type": "shell",
+            "command": "set -e; cd \"${fileDirname}\"; rm -f ./*.o ./debug.exe; for f in ./*.s; do nasm -F dwarf -g -f elf32 -i . -o \"${f%.s}.o\" \"$f\"; done; gcc -m32 -no-pie -o debug.exe ./*.o",
+            "options": {
+                "shell": {
+                    "executable": "/bin/bash",
+                    "args": ["-c"]
+                }
             },
-          "presentation": {
-              "focus": true,
-              "panel": "dedicated",
-              "reveal": "silent",
-              "clear": true
-          }
+            "group": "build",
+            "problemMatcher": {
+                "owner": "nasm",
+                "fileLocation": ["relative", "${fileDirname}"],
+                "pattern": {
+                    "regexp": "^(.*):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "severity": 3,
+                    "message": 4
+                }
+            },
+            "presentation": {
+                "echo": false,
+                "focus": false,
+                "panel": "dedicated",
+                "reveal": "silent",
+                "clear": true
+            }
         }
     ]
 }

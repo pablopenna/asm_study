@@ -11,16 +11,29 @@
         // programs -- with it on, the program just runs to completion.
         // Set a breakpoint in the gutter instead (requires
         // "debug.allowBreakpointsEverywhere": true).
+        //
+        // NOTE: the program is always `debug.exe`, built by the matching
+        // task in tasks.json from every .s file in the folder of the file
+        // you pressed F5 on. It is deliberately NOT named after the focused
+        // file: with ${fileBasenameNoExtension}.exe, hitting F5 while lib.s
+        // was focused built lib.exe (no _start in it) and then "debugged"
+        // that, which is one of the ways breakpoints silently never hit.
+        // `make` still builds main.exe separately for running by hand.
         // ---------------------------------------------------------------
         {
             "type": "cppdbg",
             "request": "launch",
             "name": "CPPDBG64 (nasm elf64 + ld)",
-            "program": "${fileDirname}/${fileBasenameNoExtension}.exe",
+            "program": "${fileDirname}/debug.exe",
             "args": [],
             "cwd": "${fileDirname}",
             "stopAtEntry": false,
             "preLaunchTask": "asm64",
+            // Run the program in the Debug Console instead of spawning a new
+            // integrated terminal for every debug session. These programs
+            // never read stdin, so nothing is lost.
+            "console": "internalConsole",
+            "externalConsole": false,
             "MIMode": "gdb",
             "miDebuggerPath": "/usr/bin/gdb",
             "setupCommands": [
@@ -30,8 +43,26 @@
                     "ignoreFailures": true
                 },
                 {
-                    "description": "Auto-dump the top of the stack into the Debug Console on every stop",
+                    "description": "Print addresses next to symbols in the dumps",
+                    "text": "-gdb-set print symbol-filename off",
+                    "ignoreFailures": true
+                },
+                // The three `display` expressions below re-run on EVERY stop
+                // (breakpoint, step, signal) and print into the Debug
+                // Console, newest stop at the bottom.
+                {
+                    "description": "Stack: 4 qwords BELOW rsp (already popped / red zone)",
+                    "text": "display/4gx $rsp-0x20",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Stack: 8 qwords AT and above rsp (live top of stack)",
                     "text": "display/8gx $rsp",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "The instruction about to execute",
+                    "text": "display/i $rip",
                     "ignoreFailures": true
                 }
             ]
@@ -40,11 +71,13 @@
             "type": "cppdbg",
             "request": "launch",
             "name": "CPPDBG32 (nasm elf32 + ld)",
-            "program": "${fileDirname}/${fileBasenameNoExtension}.exe",
+            "program": "${fileDirname}/debug.exe",
             "args": [],
             "cwd": "${fileDirname}",
             "stopAtEntry": false,
             "preLaunchTask": "asm32",
+            "console": "internalConsole",
+            "externalConsole": false,
             "MIMode": "gdb",
             "miDebuggerPath": "/usr/bin/gdb",
             "targetArchitecture": "x86",
@@ -55,8 +88,23 @@
                     "ignoreFailures": true
                 },
                 {
-                    "description": "Auto-dump the top of the stack into the Debug Console on every stop",
+                    "description": "Print addresses next to symbols in the dumps",
+                    "text": "-gdb-set print symbol-filename off",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Stack: 4 dwords BELOW esp (already popped)",
+                    "text": "display/4wx $esp-0x10",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Stack: 8 dwords AT and above esp (live top of stack)",
                     "text": "display/8wx $esp",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "The instruction about to execute",
+                    "text": "display/i $eip",
                     "ignoreFailures": true
                 }
             ]
