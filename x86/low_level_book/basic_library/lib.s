@@ -55,7 +55,7 @@ print_char:
 
 global print_newline
 print_newline:
-    push 0x0A; 0x0A or 10 is the new line character in ascii
+    push 0x0A
     
     mov rdi, rsp
 
@@ -63,4 +63,37 @@ print_newline:
     
     pop rax
 
+    ret
+
+global print_uint
+; div <reg> where <reg> holds the divisor. The number being divided is 128 bits: RDX:RAX.
+; After the instruction finishes RAX holds the quotient and RDX the remainder.
+print_uint:
+    mov rax, rdi
+    mov rcx, 10 ; base 10
+    sub rsp, 32 ; get 32-byte buffer in the stack. we can write from [rsp] to [rsp+31]. sub instead of add because the stack grows to lower positions.
+    mov byte[rsp + 31], 0; null terminated string, print string goes from provided position and moves to upper addresses - most significant byte is 0. Since we pushed 0, we do not need to manually set the most significant byte to 0, just be carefult with overflowing
+    mov r8, rsp ; pointer to buffer
+    add r8, 30; Leave most significant byte as is (0), so we start in the one below. (remember the range of bytes is 0 to 7, so second to last is 6)
+    mov r9, 1; written bytes counter, already count the 0 in the most significant byte.
+    
+    .loop:
+    cmp r9, 32 ; prevent overflow - cannot write more than 8 bytes into buffer or we start overwriting the next element in the stack.
+    jge .end
+
+    xor rdx, rdx
+    div rcx
+    add dl, '0' ; convert to ASCII as print_string expects ASCII values in the address provided
+    mov [r8], dl; dl = less significant byte of rdx
+    dec r8 ; we write from higher address of the buffer to lower so that digits are displayed in proper order by print_string
+    inc r9
+
+    cmp rax, 0
+    jne .loop
+
+    .end:
+    add r8, 1
+    mov rdi, r8 ; why r8 instead of rsp? r8 contains the lowest address of the buffer written to. If we do not write 7 digits and pass rsp, the first byte read by print string is 0, thus it would consider it an empty string.
+    call print_string
+    add rsp, 32; similar to pop but discarding value
     ret

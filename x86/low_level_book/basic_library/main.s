@@ -5,10 +5,15 @@ extern string_length
 extern print_string
 extern print_char
 extern print_newline
+extern print_uint
 
 _start:
   mov rdi, codes
-  call print_char
+  call print_string
+  call print_newline
+
+  mov rdi, 0x00BC614E
+  call print_uint
   call print_newline
 
   mov rdi, 0
