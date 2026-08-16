@@ -1,5 +1,5 @@
-; From the book: Any function can accept an unlimited number of arguments. The 
-; first six arguments are passed in rdi, rsi, rdx, rcx, r8, and r9, respectively. 
+; From the book: Any function can accept an unlimited number of arguments. The
+; first six arguments are passed in rdi, rsi, rdx, rcx, r8, and r9, respectively.
 ; The rest is passed on to the stack in reverse order.
 ;
 ; Callee-saved registers must be restored by the procedure being called. So, if it needs to change them, it has to change them back.
@@ -32,7 +32,7 @@ global print_string
 ; in - rdi contains pointer to string
 print_string:
     mov r8, rdi ; string in r8
-    
+
     call string_length
     mov r9, rax ; string length in r9
 
@@ -56,11 +56,11 @@ print_char:
 global print_newline
 print_newline:
     push 0x0A
-    
+
     mov rdi, rsp
 
     call print_char
-    
+
     pop rax
 
     ret
@@ -76,7 +76,7 @@ print_uint:
     mov r8, rsp ; pointer to buffer
     add r8, 30; Leave most significant byte as is (0), so we start in the one below. (remember the range of bytes is 0 to 7, so second to last is 6)
     mov r9, 1; written bytes counter, already count the 0 in the most significant byte.
-    
+
     .loop:
     cmp r9, 32 ; prevent overflow - cannot write more than 8 bytes into buffer or we start overwriting the next element in the stack.
     jge .end
@@ -123,9 +123,21 @@ print_int:
     call print_char
     add rsp, 8
     .convert_to_positive:
-    neg r8 
+    neg r8
 
     .finally:
     mov rdi, r8
     call print_uint
     ret
+
+global read_char
+read_char:
+  push 0x0
+  mov rax, 0
+  mov rdi, 0
+  mov rsi, rsp
+  mov rdx, 1
+  syscall
+
+  pop rax
+  ret
