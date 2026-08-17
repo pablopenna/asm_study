@@ -2,6 +2,8 @@
 ; first six arguments are passed in rdi, rsi, rdx, rcx, r8, and r9, respectively.
 ; The rest is passed on to the stack in reverse order.
 ;
+; Return values in rax and rdx.
+;
 ; Callee-saved registers must be restored by the procedure being called. So, if it needs to change them, it has to change them back.
 ; These registers are callee-saved: rbx, rbp, rsp, r12-r15, a total of seven registers.
 section .text
@@ -140,4 +142,52 @@ read_char:
   syscall
 
   pop rax
+  ret
+
+global read_word
+; rdi - buffer address
+; rsi - buffer size
+; leading whitespaces are skipped/ignore
+; A word is considered already processed if it is null terminated
+; A word is not already processed if it has a trailing whitespace or it is right at the end of the buffer
+read_word:
+  mov r10, rdi
+  add r10, rsi ; r10 - address limit. We cannot write to addresses equal or greater to r10
+  .skip_leading_whitespaces:
+  cmp rdi, r10
+  jge .finish_error
+  cmp byte[rdi], 0x20 ; whitespace
+  jne .read_word
+  inc rdi
+  jmp .skip_leading_whitespaces
+
+  .read_word:
+  mov r8, rdi; r8 - start of word
+  .read_word_loop:
+  .check_size:
+  cmp rdi, r10
+  jge .finish_error
+  .check_null:
+  cmp byte[rdi], 0x0 ; null
+  jne .check_whitespace
+  inc rdi
+  jmp .read_word ; go for next word
+  .check_whitespace:
+  cmp byte[rdi], 0x20 ; whitespace
+  je .finish
+  inc rdi
+  jmp .read_word_loop
+
+  .finish:
+  mov r9, rdi; r9 - end of word
+  mov byte [r9], 0x0 ; null terminate word
+
+  mov rax, r8 ; pointer to word
+  mov rdx, r9
+  sub rdx, r8 ; length of the word
+  ret
+
+  .finish_error:
+  mov rax, 0x0
+  mov rdx, 0x0
   ret
