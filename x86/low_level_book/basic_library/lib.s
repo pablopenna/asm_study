@@ -147,47 +147,31 @@ read_char:
 global read_word
 ; rdi - buffer address
 ; rsi - buffer size
-; leading whitespaces are skipped/ignore
-; A word is considered already processed if it is null terminated
-; A word is not already processed if it has a trailing whitespace or it is right at the end of the buffer
+; Accepts a buffer address and size as arguments. 
+; Reads next word from stdin (skipping whitespaces7 into buffer). Stops 
+; and returns 0 if word is too big for the buffer specified; otherwise 
+; returns a buffer address.
+; This function should null-terminate the accepted string.
 read_word:
-  mov r10, rdi
-  add r10, rsi ; r10 - address limit. We cannot write to addresses equal or greater to r10
-  .skip_leading_whitespaces:
-  cmp rdi, r10
-  jge .finish_error
-  cmp byte[rdi], 0x20 ; whitespace
-  jne .read_word
-  inc rdi
-  jmp .skip_leading_whitespaces
+  mov r8, rdi ; buffer address
+  mov r10, rsi ; buffer size
+  mov byte [r8 + r10 - 1], 0x0 ; set last character in buffer as null
 
-  .read_word:
-  mov r8, rdi; r8 - start of word
-  .read_word_loop:
-  .check_size:
-  cmp rdi, r10
-  jge .finish_error
-  .check_null:
-  cmp byte[rdi], 0x0 ; null
-  jne .check_whitespace
-  inc rdi
-  jmp .read_word ; go for next word
-  .check_whitespace:
-  cmp byte[rdi], 0x20 ; whitespace
-  je .finish
-  inc rdi
-  jmp .read_word_loop
+  mov rax, 0
+  mov rdi, 0
+  mov rsi, r8
+  mov rdx, r10
+  syscall
 
+  cmp byte [r8 + r10 - 1], 0x0 ; if it is not 0, it has been overwritten
+  jne .overflow
+  
   .finish:
-  mov r9, rdi; r9 - end of word
-  mov byte [r9], 0x0 ; null terminate word
-
-  mov rax, r8 ; pointer to word
-  mov rdx, r9
-  sub rdx, r8 ; length of the word
+  mov rax, r8
+  mov rdx, r10
   ret
 
-  .finish_error:
-  mov rax, 0x0
-  mov rdx, 0x0
+    .overflow:
+  mov rax, 0
+  mov rdx, 0
   ret

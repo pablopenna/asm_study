@@ -16,16 +16,7 @@ _start:
   mov rsi, hello_len
   call read_word
 
-  mov rdi, rax
-  call print_string
-  call print_newline
-
-  ; second word
   mov rdi, hello
-  mov rsi, hello_len
-  call read_word
-
-  mov rdi, rax
   call print_string
   call print_newline
 
@@ -39,3 +30,4 @@ minus: db 0x2D
 newline: db 10
 hello: db 'Hello World'
 hello_len: equ $ - hello
+buffer: times 64 db 0xFF
