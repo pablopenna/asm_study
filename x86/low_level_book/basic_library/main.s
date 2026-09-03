@@ -9,21 +9,18 @@ extern print_uint
 extern print_int
 extern read_char
 extern read_word
+extern parse_uint
 
 _start:
-  ; first word
-  mov rdi, hello
-  mov rsi, hello_len
-  call read_word
-
-  mov rdi, hello
-  call print_string
-  call print_newline
-
+  mov rdi, test_number_to_parse
+  call parse_uint
+  
+  .end:
   mov rdi, 0
   call exit
 
 section .data
+test_number_to_parse: db '20251219', 0x0
 codes: db '0123456789ABCDEF', 0x0
 plus: db 0x2B
 minus: db 0x2D

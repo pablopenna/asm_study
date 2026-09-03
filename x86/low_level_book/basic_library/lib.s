@@ -6,131 +6,135 @@
 ;
 ; Callee-saved registers must be restored by the procedure being called. So, if it needs to change them, it has to change them back.
 ; These registers are callee-saved: rbx, rbp, rsp, r12-r15, a total of seven registers.
+section .data
+ascii_for_0: db '0'
+ascii_for_9: db '9'
+
 section .text
 
 ; exit code in rdi as parameter - matches the syscall so we do not touch rdi
 global exit
 exit:
-    ; no need to care about the stack as the program is going to exit so nothing after this
-    mov rax, 60
-    syscall
+  ; no need to care about the stack as the program is going to exit so nothing after this
+  mov rax, 60
+  syscall
 
 global string_length
 ; in - rdi contains pointer to string
 ; out - rax contains length of the string
 string_length:
-    xor rax, rax
+  xor rax, rax
 
-    .loop:
-    cmp byte[rdi+rax], 0
-    je .end
-    inc rax
-    jmp .loop
+  .loop:
+  cmp byte[rdi+rax], 0
+  je .end
+  inc rax
+  jmp .loop
 
-    .end:
-    ret
+  .end:
+  ret
 
 global print_string
 ; in - rdi contains pointer to string
 print_string:
-    mov r8, rdi ; string in r8
+  mov r8, rdi ; string in r8
 
-    call string_length
-    mov r9, rax ; string length in r9
+  call string_length
+  mov r9, rax ; string length in r9
 
-    mov rax, 1
-    mov rdi, 1
-    mov rsi, r8
-    mov rdx, r9
-    syscall
+  mov rax, 1
+  mov rdi, 1
+  mov rsi, r8
+  mov rdx, r9
+  syscall
 
-    ret
+  ret
 
 global print_char
 print_char:
-    mov rsi, rdi; move parameter to register used as pointer to string
-    mov rax, 1
-    mov rdi, 1
-    mov rdx, 1
-    syscall
-    ret
+  mov rsi, rdi; move parameter to register used as pointer to string
+  mov rax, 1
+  mov rdi, 1
+  mov rdx, 1
+  syscall
+  ret
 
 global print_newline
 print_newline:
-    push 0x0A
+  push 0x0A
 
-    mov rdi, rsp
+  mov rdi, rsp
 
-    call print_char
+  call print_char
 
-    pop rax
+  pop rax
 
-    ret
+  ret
 
 global print_uint
 ; div <reg> where <reg> holds the divisor. The number being divided is 128 bits: RDX:RAX.
 ; After the instruction finishes RAX holds the quotient and RDX the remainder.
 print_uint:
-    mov rax, rdi
-    mov rcx, 10 ; base 10
-    sub rsp, 32 ; get 32-byte buffer in the stack. we can write from [rsp] to [rsp+31]. sub instead of add because the stack grows to lower positions.
-    mov byte[rsp + 31], 0; null terminated string, print string goes from provided position and moves to upper addresses - most significant byte is 0. Since we pushed 0, we do not need to manually set the most significant byte to 0, just be carefult with overflowing
-    mov r8, rsp ; pointer to buffer
-    add r8, 30; Leave most significant byte as is (0), so we start in the one below. (remember the range of bytes is 0 to 7, so second to last is 6)
-    mov r9, 1; written bytes counter, already count the 0 in the most significant byte.
+  mov rax, rdi
+  mov rcx, 10 ; base 10
+  sub rsp, 32 ; get 32-byte buffer in the stack. we can write from [rsp] to [rsp+31]. sub instead of add because the stack grows to lower positions.
+  mov byte[rsp + 31], 0; null terminated string, print string goes from provided position and moves to upper addresses - most significant byte is 0. Since we pushed 0, we do not need to manually set the most significant byte to 0, just be carefult with overflowing
+  mov r8, rsp ; pointer to buffer
+  add r8, 30; Leave most significant byte as is (0), so we start in the one below. (remember the range of bytes is 0 to 7, so second to last is 6)
+  mov r9, 1; written bytes counter, already count the 0 in the most significant byte.
 
-    .loop:
-    cmp r9, 32 ; prevent overflow - cannot write more than 8 bytes into buffer or we start overwriting the next element in the stack.
-    jge .end
+  .loop:
+  cmp r9, 32 ; prevent overflow - cannot write more than 8 bytes into buffer or we start overwriting the next element in the stack.
+  jge .end
 
-    xor rdx, rdx
-    div rcx
-    add dl, '0' ; convert to ASCII as print_string expects ASCII values in the address provided
-    mov [r8], dl; dl = less significant byte of rdx
-    dec r8 ; we write from higher address of the buffer to lower so that digits are displayed in proper order by print_string
-    inc r9
+  xor rdx, rdx
+  div rcx
+  add dl, '0' ; convert to ASCII as print_string expects ASCII values in the address provided
+  mov [r8], dl; dl = less significant byte of rdx
+  dec r8 ; we write from higher address of the buffer to lower so that digits are displayed in proper order by print_string
+  inc r9
 
-    cmp rax, 0
-    jne .loop
+  cmp rax, 0
+  jne .loop
 
-    .end:
-    add r8, 1
-    mov rdi, r8 ; why r8 instead of rsp? r8 contains the lowest address of the buffer written to. If we do not write 7 digits and pass rsp, the first byte read by print string is 0, thus it would consider it an empty string.
-    call print_string
-    add rsp, 32; similar to pop but discarding value
-    ret
+  .end:
+  add r8, 1
+  mov rdi, r8 ; why r8 instead of rsp? r8 contains the lowest address of the buffer written to. If we do not write 7 digits and pass rsp, the first byte read by print string is 0, thus it would consider it an empty string.
+  call print_string
+  add rsp, 32; similar to pop but discarding value
+  ret
 
 global print_int
 ; div <reg> where <reg> holds the divisor. The number being divided is 128 bits: RDX:RAX.
 ; After the instruction finishes RAX holds the quotient and RDX the remainder.
 print_int:
-    mov r8, rdi
-    cmp r8, 0
-    jl .negative
+  mov r8, rdi
+  cmp r8, 0
+  jl .negative
 
-    .positive
-    .print_plus:
-    push byte 0x0
-    mov byte[rsp], 0x2B
-    mov rdi, rsp
-    call print_char
-    add rsp, 8
-    jmp .finally
+  .positive
+  .print_plus:
+  push byte 0x0
+  mov byte[rsp], 0x2B
+  mov rdi, rsp
+  call print_char
+  add rsp, 8
+  jmp .finally
 
-    .negative:
-    .print_minus:
-    push byte 0x0
-    mov byte[rsp], 0x2D
-    mov rdi, rsp
-    call print_char
-    add rsp, 8
-    .convert_to_positive:
-    neg r8
+  .negative:
+  .print_minus:
+  push byte 0x0
+  mov byte[rsp], 0x2D
+  mov rdi, rsp
+  call print_char
+  add rsp, 8
+  .convert_to_positive:
+  neg r8
 
-    .finally:
-    mov rdi, r8
-    call print_uint
-    ret
+  .finally:
+  mov rdi, r8
+  call print_uint
+  ret
 
 global read_char
 read_char:
@@ -148,7 +152,7 @@ global read_word
 ; rdi - buffer address
 ; rsi - buffer size
 ; Accepts a buffer address and size as arguments. 
-; Reads next word from stdin (skipping whitespaces7 into buffer). Stops 
+; Reads next word from stdin (skipping whitespaces into buffer). Stops 
 ; and returns 0 if word is too big for the buffer specified; otherwise 
 ; returns a buffer address.
 ; This function should null-terminate the accepted string.
@@ -157,8 +161,8 @@ read_word:
   mov r10, rsi ; buffer size
   mov byte [r8 + r10 - 1], 0x0 ; set last character in buffer as null
 
-  mov rax, 0
-  mov rdi, 0
+  mov rax, 0 ; read syscall id
+  mov rdi, 0 ; stdin
   mov rsi, r8
   mov rdx, r10
   syscall
@@ -171,7 +175,50 @@ read_word:
   mov rdx, r10
   ret
 
-    .overflow:
+  .overflow:
   mov rax, 0
   mov rdx, 0
+  ret
+
+global parse_uint
+; Accepts a null-terminated string and tries to parse an unsigned number from
+; its start.
+; Returns the number parsed in rax, its characters count in rdx.
+; Input string buffer pointed by rdi
+
+; Example: Convert 2026 (decimal) to hex.
+; Step	Division	Quotient	Remainder	Hex Digit
+; 1	    2026 ÷ 16	126	      10	      A (least significant)
+; 2	    126 ÷ 16	7	        14	      E
+; 3	    7 ÷ 16	  0	        7	        7 (most significant)
+; Read the remainders from bottom to top: 7, E, A → Therefore, 2026₁₀ = 0x7EA
+parse_uint:
+  xor rax, rax ; equivalent to mov rax, 0 but more performant (opcode has less bytes)
+  xor rdx, rdx ; character count
+  xor r9, r9 ; used as buffer to store next byte of the string
+
+  .loop:
+  mov r9b,[rdi+rdx] ; move next digit (byte) in string to r9
+  cmp r9b, 0x0 ; check if null
+  je .end
+  
+  .check_if_digit_is_valid:
+  cmp r9b, [ascii_for_0]
+  jl .invalid_input
+  cmp r9b, [ascii_for_9]
+  jg .invalid_input
+  
+  .parse_digit:
+  shl rax, 8; shift left rax 8 bits (1 byte) to give room for the digit in r9b
+  sub r9b, [ascii_for_0] ; transform from ascii to number
+  mov al, r9b; move lowest byte in r9 to lowest byte in rax
+  
+  inc rdx
+  jmp .loop
+
+  .invalid_input:
+  xor rax, rax
+  xor rdx, rdx
+
+  .end:
   ret
